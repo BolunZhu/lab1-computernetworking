@@ -22,7 +22,6 @@ using namespace std;
 // int write(const char *usrbuf, int n)
 int write(SOCKET s,const char *usrbuf, int n){
 	//fputs(usrbuf, stdout);
-	check(s >= 0);
 	int left = n;
 	const char *bufp = usrbuf;
 	int written = 0;
@@ -30,7 +29,7 @@ int write(SOCKET s,const char *usrbuf, int n){
 	while (left>0)
 	{
 		written = send(s, usrbuf, left, 0);
-		if(written == 0) break;//end
+		if(written == 0)  ;//end
 		if (written < 0){
             printf("write error ,Exit!\n");
             std::terminate();
@@ -40,17 +39,7 @@ int write(SOCKET s,const char *usrbuf, int n){
 	}
 	return n - left;//left to written?
 };
-//这个函数是用来将流里面的内容使用write函数send给对方的
-void socketOutFlush() {
-	string tmp = socketStringStream.str();
-	const char* buf= tmp.c_str();
-	int size =strlen(buf);
-	write(buf, size);
-	//std::cout << "[DEBUG] what we put with size of " << size<<std::endl;
-	//fputs(buf, stdout);//debug
-	//https://stackoverflow.com/questions/20731/how-do-you-clear-a-stringstream-variable
-     socketStringStream.str(std::string());
-}	
+
 void http_this(SOCKET this_socket,sockaddr addr)
 {
     char inputstr[BUFLEN+1];//用于填入http报文的输入缓冲区
@@ -64,7 +53,7 @@ void http_this(SOCKET this_socket,sockaddr addr)
     int match = std::regex_search(text,sm,regex);
     if(match==0){
         printf("cannot match this http\n");
-        break;
+         ;
     }
     // GET /index.html HTTP/1.1
     else{
@@ -83,7 +72,7 @@ void http_this(SOCKET this_socket,sockaddr addr)
     if (match2 == 0)
     {
         printf("no file extension found, read again");
-        break;
+         ;
     }
     else {
         //std::cout<<sm2[0]<<std::endl;
@@ -130,7 +119,7 @@ void http_this(SOCKET this_socket,sockaddr addr)
         int size =strlen(tmp_buf);
         write(this_socket,tmp_buf, size);
         socketStringStream.str(std::string());
-        break;
+         ;
     }
     //成功找到文件 开始输出
     std::filebuf* tmp= t.rdbuf();
