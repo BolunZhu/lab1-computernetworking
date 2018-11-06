@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <iostream>
 #include <istream>
 #include <ostream>
@@ -9,7 +9,7 @@
 #include <list>
 #include <algorithm>
 #include <string.h>
-
+#include <direct.h>
 //#include <winsock.h>
 #include <winsock2.h>
 #include <WS2tcpip.h>
@@ -24,9 +24,8 @@ using std::string;
 //using namespace std;
 
 static const char ERROR_HTML_PAGE[] = "HTTP/1.1 404 Not Found\r\nContent-Type: \
-text/html\r\nContent-Length: 78\r\n\r\n<HTML>\r\n<BODY>\r\nSorry, the page you requested was not found.\
+text/html\r\nContent-Length: 78\r\n\r\n<HTML>\r\n<BODY>\r\n404 not found !Sorry, the page you requested was not found. By ZBL ACM1601 U201614788\
 \r\n</BODY>\r\n</HTML>\r\n\0";
-
 //必须使用\\来表示转义字符 否则\无法被识别
 string fileBase = "G:\\ComputerNetworkLab\\lab1\\level1\\webserver\\lab1-computernetworking\\";
 
@@ -155,11 +154,10 @@ void http_this(SOCKET this_socket,sockaddr addr)
     write(this_socket,tmp_buf, tmp_size);
     socketStringStream.str(std::string());
     write(this_socket,buffer, size);
-
+	return;
 }
 
-template <typename T>
-void info_input(T *t)
+void info_input(char *t)
 {
 	char c;
 	std::cin.get(c);
@@ -167,7 +165,31 @@ void info_input(T *t)
 	{
 		std::cin.putback(c);
 		std::cin >> t;
-		std::cin.ignore(1,'\n');    //清除输入后留下的回车，或者直接清空缓存区也可
+		std::cin.ignore(1, '\n');   //清除输入后留下的回车，或者直接清空缓存区也可
+	}
+	
+}
+void info_input(string &t)
+{
+	char c;
+	std::cin.get(c);
+	if (c != '\n')
+	{
+		std::cin.putback(c);
+		std::cin >> t;
+		std::cin.ignore(1, '\n');   //清除输入后留下的回车，或者直接清空缓存区也可
+	}
+
+}
+void info_input(unsigned int & t)
+{
+	char c;
+	std::cin.get(c);
+	if (c != '\n')
+	{
+		std::cin.putback(c);
+		std::cin >> t;
+		std::cin.ignore(1, '\n');    //清除输入后留下的回车，或者直接清空缓存区也可
 	}
 }
 int main(int argc, char const *argv[])
@@ -181,8 +203,16 @@ int main(int argc, char const *argv[])
     sockaddr_in srvAddr;
     //5
     int nAddrLen = sizeof(sockaddr);
-    
-
+    //获取当前程序运行的目录
+	char file_buffer[_MAX_PATH];
+	if (_getcwd(file_buffer, _MAX_PATH) == NULL) {
+		printf("无法获得程序当前运行目录\n");
+		memset(file_buffer, 0, _MAX_PATH);
+	}
+	else {
+		std::cout << "当前程序运行目录为" << file_buffer << "，已经设置为服务器默认工作目录\n";
+		fileBase = file_buffer;
+	}
     // 1.initialize winsock using startup
     nRc = WSAStartup(0x0101, & wsaData);		
     if(nRc)
@@ -213,12 +243,14 @@ int main(int argc, char const *argv[])
     printf("2.Server TCP socket create OK!\n");
 
     //3.bind socket to port 5050
-    printf("Please input your Server IP addr(example: 144.133.122.111)\n");
+	printf("Please input file path for server .Press enter for default\n");
+	info_input(fileBase);
+    printf("Please input your Server IP addr(default: 127.0.0.1)\n");
 	char ipaddr[16] = "127.0.0.1";
-	info_input<char>(ipaddr);
-	printf("Please input your Server port(example:5050)\n");
+	info_input(ipaddr);
+	printf("Please input your Server port(default:80)\n");
 	unsigned int ip_port = 80;
-	info_input<unsigned int>(&ip_port);
+	info_input(ip_port);
     srvAddr.sin_family = AF_INET;
     srvAddr.sin_port = htons(ip_port);
     srvAddr.sin_addr.S_un.S_addr = inet_addr(ipaddr);
