@@ -1,22 +1,34 @@
 //#include "stdafx.h"
 #include <stdio.h>
-
+#include <iostream>
+#include <istream>
+#include <ostream>
+#include <sstream>
+#include <fstream>
+#include <stdlib.h>
+#include <streambuf>
 #include <list>
 #include <algorithm>
 #include <string.h>
 
-#include <winsock.h>
-// #include <winsock2.h>
+//#include <winsock.h>
+#include <winsock2.h>
+#include <WS2tcpip.h>
+
 //对于Winsock 2, include <winsock2.h>
 #include <thread>
 #include <regex>
 #define MAXCONN 10//for single thread
 #define BUFLEN 255
+
+using std::string;
+//using namespace std;
+
 static const char ERROR_HTML_PAGE[] = "HTTP/1.1 404 Not Found\r\nContent-Type: \
 text/html\r\nContent-Length: 78\r\n\r\n<HTML>\r\n<BODY>\r\nSorry, the page you requested was not found.\
 \r\n</BODY>\r\n</HTML>\r\n\0";
+string fileBase = "G:/";
 
-using namespace std;
 //这个函数是用来将字符串发送给客户端的
 // int write(const char *usrbuf, int n)
 int write(SOCKET s,const char *usrbuf, int n){
@@ -137,7 +149,7 @@ void http_this(SOCKET this_socket,sockaddr addr)
     int tmp_size =strlen(tmp_buf);
     write(this_socket,tmp_buf, tmp_size);
     socketStringStream.str(std::string());
-    comming.write(buffer, size);
+    write(this_socket,buffer, size);
 
 }
 
@@ -145,7 +157,7 @@ int main(int argc, char const *argv[])
 {
     //1
     WSADATA wsaData;
-    int nRC;
+    int nRc;
     //2
     SOCKET srvSock;
     //3
@@ -154,8 +166,8 @@ int main(int argc, char const *argv[])
     u_long uNonBlock;
     int nAddrLen = sizeof(sockaddr);
     char sendBuf[BUFLEN],recvBuf[BUFLEN];
-    ListCONN conList;		//保存所有有效的会话SOCKET
-    ListConErr conErrList;	//保存所有失效的会话SOCKET
+   // ListCONN conList;		//保存所有有效的会话SOCKET
+    //ListConErr conErrList;	//保存所有失效的会话SOCKET
     FD_SET rfds,wfds;
     
 
@@ -171,7 +183,7 @@ int main(int argc, char const *argv[])
     {
     //版本支持不够
     //报告错误给用户，清除Winsock，返回
-    printf("Server winsock version error!\n ")
+	printf("Server winsock version error!\n ");
     WSACleanup();
     return 1; 
     }
@@ -190,15 +202,16 @@ int main(int argc, char const *argv[])
 
     //3.bind socket to port 5050
     printf("Please input your Server IP addr(example: 144.133.122.111)\n");
-    char ipaddr[strlen(144.133.122.111)+1];
-    scanf("%s",ipaddr);
+    //char ipaddr[strlen(144.133.122.111)+1];
+    //scanf("%s",ipaddr);
+	char ipaddr[] = "127.0.0.1";
     srvAddr.sin_family = AF_INET;
     srvAddr.sin_port = htons(5050);
     srvAddr.sin_addr.S_un.S_addr = inet_addr(ipaddr);
     // srvAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-    nRC=bind(srvSock,(LPSOCKADDR)&srvAddr,sizeof(srvAddr));
-    if(nRC == SOCKET_ERROR)
-    {[0]
+    nRc=bind(srvSock,(LPSOCKADDR)&srvAddr,sizeof(srvAddr));
+    if(nRc == SOCKET_ERROR)
+    {
     printf("Server socket bind error!\n");
     closesocket(srvSock);
     WSACleanup();
@@ -207,8 +220,8 @@ int main(int argc, char const *argv[])
     printf("3.Server socket bind OK!\n");
 
     //4.listen for connect
-    nRC = listen(srvSock,MAXCONN);
-    if(nRC == SOCKET_ERROR)
+    nRc = listen(srvSock,MAXCONN);
+    if(nRc == SOCKET_ERROR)
     {
     printf("Server socket listen error! Too much connect!\n");
     closesocket(srvSock);
@@ -221,12 +234,11 @@ int main(int argc, char const *argv[])
     int nNumConns = 0;	//当前请求连接数
     SOCKET sConns[MAXCONN];	//会话SOCKET数组
     sockaddr ConnAddrs[MAXCONN];//请求连接的客户端地址
-    std::thread thread_pool[nNumConns];//线程池
+    std::thread thread_pool[MAXCONN];//线程池
     while( nNumConns < MAXCONN){
     //每当收到客户端连接请求，创建新的会话SOCKET，保存在/	//sConns数组中
     //客户端地址保存在ConnAddrs数组中
-    sConns[nNumConns] = accept(srvSock, 
-    ConnAddrs[nNumConns], &nAddrLen);
+    sConns[nNumConns] = accept(srvSock,&ConnAddrs[nNumConns], &nAddrLen);
         if(sConns[nNumConns] == INVALID_SOCKET)
         {
             printf("Cannot creat new socket accepted socket When accepted\n");
@@ -235,7 +247,7 @@ int main(int argc, char const *argv[])
         else
         {
             //创建会话SOCKET成功，启动新的线程与客户端会话
-            std::thread thread_pool[nNumConns]=std::thread(http_this,sConns[nNumConns],ConnAddrs[nNumConns]);
+            thread_pool[nNumConns]=std::thread(http_this,sConns[nNumConns],ConnAddrs[nNumConns]);
             thread_pool[nNumConns].detach();
             printf("5.accept and create new socket OK!\n");
             nNumConns ++;
