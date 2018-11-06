@@ -64,14 +64,8 @@ void http_this(SOCKET this_socket,sockaddr addr)
     int match = std::regex_search(text,sm,regex);
     if(match==0){
         printf("cannot match this http\n");
-         ;
     }
     // GET /index.html HTTP/1.1
-    else{
-        // for(unsigned i =0 ; i< sm.size();i++){
-        //     //
-        // }
-    }
     string operation1 = sm[1];// GET
     string operation2 = sm[2];// /index.html
     std::cout <<"operation:\n"<< operation1 <<std::endl<< operation2 << std::endl;
@@ -135,7 +129,7 @@ void http_this(SOCKET this_socket,sockaddr addr)
     }
     //成功找到文件 开始输出
     std::filebuf* tmp= t.rdbuf();
-    unsigned int size= tmp->pubseekoff(0, t.end, t.in);
+    int size= tmp->pubseekoff(0, t.end, t.in);
     tmp->pubseekpos(0, t.in);
     // allocate memory to contain file data
 	if (size <= 0) {
@@ -164,6 +158,18 @@ void http_this(SOCKET this_socket,sockaddr addr)
 
 }
 
+template <typename T>
+void info_input(T *t)
+{
+	char c;
+	std::cin.get(c);
+	if (c != '\n')
+	{
+		std::cin.putback(c);
+		std::cin >> t;
+		std::cin.ignore(1,'\n');    //清除输入后留下的回车，或者直接清空缓存区也可
+	}
+}
 int main(int argc, char const *argv[])
 {
     //1
@@ -208,11 +214,13 @@ int main(int argc, char const *argv[])
 
     //3.bind socket to port 5050
     printf("Please input your Server IP addr(example: 144.133.122.111)\n");
-    //char ipaddr[strlen(144.133.122.111)+1];
-    //scanf("%s",ipaddr);
-	char ipaddr[] = "127.0.0.1";
+	char ipaddr[16] = "127.0.0.1";
+	info_input<char>(ipaddr);
+	printf("Please input your Server port(example:5050)\n");
+	unsigned int ip_port = 80;
+	info_input<unsigned int>(&ip_port);
     srvAddr.sin_family = AF_INET;
-    srvAddr.sin_port = htons(5050);
+    srvAddr.sin_port = htons(ip_port);
     srvAddr.sin_addr.S_un.S_addr = inet_addr(ipaddr);
     // srvAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
     nRc=bind(srvSock,(LPSOCKADDR)&srvAddr,sizeof(srvAddr));
