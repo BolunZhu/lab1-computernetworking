@@ -1,5 +1,5 @@
 #define TCP
-#include "stdafx.h"
+//#include "stdafx.h"
 #include <stdio.h>
 
 #include <list>
