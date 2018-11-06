@@ -1,4 +1,3 @@
-#define TCP
 //#include "stdafx.h"
 #include <stdio.h>
 
@@ -179,11 +178,7 @@ int main(int argc, char const *argv[])
     printf("1.Sever winsock init OK!\n");
     
     //2. socket TCP/UDP
-    #ifdef TCP
     srvSock = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
-    #ifndef
-    srvSock = socket(AF_INET,SOCK_DGRAM,IPPROTO_TCP);
-    #endif
     
     if(srvSock == INVALID_SOCKET)
     {
@@ -191,11 +186,7 @@ int main(int argc, char const *argv[])
     WSACleanup();
     return 2;
     }
-    #ifdef TCP
     printf("2.Server TCP socket create OK!\n");
-    #ifndef
-    printf("2.Server UDP socket create OK!\n");
-    #endif
 
     //3.bind socket to port 5050
     printf("Please input your Server IP addr(example: 144.133.122.111)\n");
