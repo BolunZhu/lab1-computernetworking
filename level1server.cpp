@@ -1,4 +1,3 @@
-//#include "stdafx.h"
 #include <stdio.h>
 #include <iostream>
 #include <istream>
@@ -27,7 +26,7 @@ using std::string;
 static const char ERROR_HTML_PAGE[] = "HTTP/1.1 404 Not Found\r\nContent-Type: \
 text/html\r\nContent-Length: 78\r\n\r\n<HTML>\r\n<BODY>\r\nSorry, the page you requested was not found.\
 \r\n</BODY>\r\n</HTML>\r\n\0";
-string fileBase = "G:/";
+string fileBase = "G:\\ComputerNetworkLab\\lab1\\level1\\webserver\\lab1-computernetworking\\";
 
 //这个函数是用来将字符串发送给客户端的
 // int write(const char *usrbuf, int n)
@@ -40,7 +39,6 @@ int write(SOCKET s,const char *usrbuf, int n){
 	while (left>0)
 	{
 		written = send(s, usrbuf, left, 0);
-		if(written == 0)  ;//end
 		if (written < 0){
             printf("write error ,Exit!\n");
             std::terminate();
@@ -83,7 +81,7 @@ void http_this(SOCKET this_socket,sockaddr addr)
     if (match2 == 0)
     {
         printf("no file extension found, read again");
-         ;
+         return;
     }
     else {
         //std::cout<<sm2[0]<<std::endl;
@@ -137,6 +135,10 @@ void http_this(SOCKET this_socket,sockaddr addr)
     int size= tmp->pubseekoff(0, t.end, t.in);
     tmp->pubseekpos(0, t.in);
     // allocate memory to contain file data
+	if (size <= 0) {
+		printf("size <= 0 ! Exit!\n");
+		return;
+	}
     char* buffer = new char[size];
     // get file data
     tmp->sgetn(buffer, size);
@@ -161,14 +163,9 @@ int main(int argc, char const *argv[])
     //2
     SOCKET srvSock;
     //3
-    sockaddr_in srvAddr,clientAddr;
+    sockaddr_in srvAddr;
     //5
-    u_long uNonBlock;
     int nAddrLen = sizeof(sockaddr);
-    char sendBuf[BUFLEN],recvBuf[BUFLEN];
-   // ListCONN conList;		//保存所有有效的会话SOCKET
-    //ListConErr conErrList;	//保存所有失效的会话SOCKET
-    FD_SET rfds,wfds;
     
 
     // 1.initialize winsock using startup
