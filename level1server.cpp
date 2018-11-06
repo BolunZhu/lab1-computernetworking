@@ -26,6 +26,8 @@ using std::string;
 static const char ERROR_HTML_PAGE[] = "HTTP/1.1 404 Not Found\r\nContent-Type: \
 text/html\r\nContent-Length: 78\r\n\r\n<HTML>\r\n<BODY>\r\nSorry, the page you requested was not found.\
 \r\n</BODY>\r\n</HTML>\r\n\0";
+
+//必须使用\\来表示转义字符 否则\无法被识别
 string fileBase = "G:\\ComputerNetworkLab\\lab1\\level1\\webserver\\lab1-computernetworking\\";
 
 //这个函数是用来将字符串发送给客户端的
@@ -122,21 +124,28 @@ void http_this(SOCKET this_socket,sockaddr addr)
     if (!t)
     {
         // 如果打开失败则返回404页面
+		printf("Cannot open this file , return 404!\n");
         socketStringStream << ERROR_HTML_PAGE;
         string tmp = socketStringStream.str();
         const char* tmp_buf= tmp.c_str();
         int size =strlen(tmp_buf);
         write(this_socket,tmp_buf, size);
         socketStringStream.str(std::string());
-         ;
+        return;
     }
     //成功找到文件 开始输出
     std::filebuf* tmp= t.rdbuf();
-    int size= tmp->pubseekoff(0, t.end, t.in);
+    unsigned int size= tmp->pubseekoff(0, t.end, t.in);
     tmp->pubseekpos(0, t.in);
     // allocate memory to contain file data
 	if (size <= 0) {
 		printf("size <= 0 ! Exit!\n");
+		socketStringStream << ERROR_HTML_PAGE;
+		string tmp = socketStringStream.str();
+		const char* tmp_buf = tmp.c_str();
+		int size = strlen(tmp_buf);
+		write(this_socket, tmp_buf, size);
+		socketStringStream.str(std::string());
 		return;
 	}
     char* buffer = new char[size];
