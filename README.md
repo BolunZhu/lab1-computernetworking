@@ -1,4 +1,4 @@
-# Http web sever
+﻿# Http web sever
 ## HUST COMPUTER NETWORKING LAB1
 ### by zbl
 ### 1.项目描述
@@ -7,7 +7,6 @@
     该项目仅包含level1server.cpp一个文件。
 ### 2.运行环境
     本项目在window10 VS2017下可以成功运行。
-    在VS2017中建立空项目，并在项目设置的link/object中添加ws2_32.lib。
     打开level1server.cpp并编译运行即可。
 ### 3.项目特性
     1.支持web sever的基本功能。能够监听、解析各种http报文的方法、请求文件目录、请求文件类型。能够向浏览器返回一个标准的http报文，包含浏览器请求的html、css、jpg、png等各种格式的文件。

@@ -13,7 +13,7 @@
 //#include <winsock.h>
 #include <winsock2.h>
 #include <WS2tcpip.h>
-
+#pragma comment(lib, "Ws2_32.lib")
 //对于Winsock 2, include <winsock2.h>
 #include <thread>
 #include <regex>
