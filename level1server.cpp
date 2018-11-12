@@ -21,9 +21,7 @@
 #define BUFLEN 255
 
 using std::string;
-//using namespace std;
-//static const char ERROR_HTML_content[] = "<HTML>\r\n<BODY>\r\n404 not found !Sorry, the page you requested was not found. By ZBL ACM1601 U201614788\
-\r\n</BODY>\r\n</HTML>\r\n\0";
+
 static const char ERROR_HTML_PAGE[] = "HTTP/1.1 404 Not Found\r\nContent-Type: \
 text/html\r\nContent-Length: 102\r\n\r\n<HTML>\r\n<BODY>\r\n404 not found !Sorry, the page you requested was not found. By ZBL ACM1601 U201614788\
 \r\n</BODY>\r\n</HTML>\r\n\0";
