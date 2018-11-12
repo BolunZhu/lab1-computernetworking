@@ -310,8 +310,8 @@ int main(int argc, char const *argv[])
             thread_pool[nNumConns]=std::thread(http_this,sConns[nNumConns],ConnAddrs[nNumConns]);
             thread_pool[nNumConns].detach();
             printf("5.accept and create new socket OK!\n");
-			//printf("sa_data = %d\n", ConnAddrs[nNumConns].sa_data);
-			//printf("sa_data = %s\n", ConnAddrs[nNumConns].sa_data);
+			printf("该请求来自 %u.%u.%u.%u", (unsigned char)ConnAddrs[nNumConns].sa_data[2],(unsigned char) ConnAddrs[nNumConns].sa_data[3], (unsigned char)ConnAddrs[nNumConns].sa_data[4], (unsigned char)ConnAddrs[nNumConns].sa_data[5]);
+			printf(": %hu\n", (unsigned short)ConnAddrs[nNumConns].sa_data[0]);
             nNumConns ++;
         }
     }
