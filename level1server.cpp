@@ -17,9 +17,11 @@
 //对于Winsock 2, include <winsock2.h>
 #include <thread>
 #include <regex>
+#include <mutex>
 #define MAXCONN 10//for single thread
 #define BUFLEN 255
-
+int g_num = 0;  // protected by g_num_mutex
+std::mutex g_num_mutex;
 using std::string;
 volatile int running = 0;
 static const char ERROR_HTML_PAGE[] = "HTTP/1.1 404 Not Found\r\nContent-Type: \
@@ -73,15 +75,17 @@ void http_this(SOCKET this_socket,sockaddr addr)
     // GET /index.html HTTP/1.1
     string operation1 = sm[1];// GET
     string operation2 = sm[2];// /index.html
-    std::cout <<"operation:\n"<< operation1 <<std::endl<< operation2 << std::endl;
-
+    
     std::smatch sm2;
     std::regex regex2("\\..*");//匹配一个.后面接任意数量的字符
     int match2 = std::regex_search(operation2, sm2, regex2);
     //std::cout << match;
     if (match2 == 0)
     {
+        g_num_mutex.lock();
+        std::cout <<"operation:\n"<< operation1 <<std::endl<< operation2 << std::endl;
         printf("no file extension found, return 404!\n");
+        g_num_mutex.unlock();
 		socketStringStream << ERROR_HTML_PAGE;
 		string tmp = socketStringStream.str();
 		const char* tmp_buf = tmp.c_str();
@@ -129,7 +133,10 @@ void http_this(SOCKET this_socket,sockaddr addr)
     if (!t)
     {
         // 如果打开失败则返回404页面
-		printf("Cannot open this file , return 404!\n");
+        g_num_mutex.lock();
+        std::cout <<"operation:\n"<< operation1 <<std::endl<< operation2 << std::endl;
+        printf("Cannot open this file , return 404!\n");
+        g_num_mutex.unlock();
         socketStringStream << ERROR_HTML_PAGE;
         string tmp = socketStringStream.str();
         const char* tmp_buf= tmp.c_str();
@@ -144,7 +151,10 @@ void http_this(SOCKET this_socket,sockaddr addr)
     tmp->pubseekpos(0, t.in);
     // allocate memory to contain file data
 	if (size <= 0) {
-		printf("size <= 0 ! Exit!\n");
+        g_num_mutex.lock();
+        std::cout <<"operation:\n"<< operation1 <<std::endl<< operation2 << std::endl;
+        printf("size <= 0 ! Exit!\n");
+        g_num_mutex.unlock();
 		socketStringStream << ERROR_HTML_PAGE;
 		string tmp = socketStringStream.str();
 		const char* tmp_buf = tmp.c_str();
@@ -326,10 +336,13 @@ int main(int argc, char const *argv[])
             //创建会话SOCKET成功，启动新的线程与客户端会话
             thread_pool[nNumConns]=std::thread(http_this,sConns[nNumConns],ConnAddrs[nNumConns]);
             thread_pool[nNumConns].detach();
-            printf("5.accept and create new socket OK!\n");
-			printf("Thread : %d\n", thread_pool[nNumConns].get_id());
+            g_num_mutex.lock();
+            // printf("5.accept and create new socket OK!\n");
+			printf("Thread : %d ----------\n", thread_pool[nNumConns].get_id());
 			printf("该请求来自 %u.%u.%u.%u", (unsigned char)ConnAddrs[nNumConns].sa_data[2],(unsigned char) ConnAddrs[nNumConns].sa_data[3], (unsigned char)ConnAddrs[nNumConns].sa_data[4], (unsigned char)ConnAddrs[nNumConns].sa_data[5]);
 			printf(": %hu\n", (unsigned short)ConnAddrs[nNumConns].sa_data[0]);
+            printf("---------------\n");
+            g_num_mutex.unlock();
             nNumConns ++;
         }
     }
