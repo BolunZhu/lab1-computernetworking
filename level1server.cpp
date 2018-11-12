@@ -22,9 +22,10 @@
 
 using std::string;
 //using namespace std;
-
+//static const char ERROR_HTML_content[] = "<HTML>\r\n<BODY>\r\n404 not found !Sorry, the page you requested was not found. By ZBL ACM1601 U201614788\
+\r\n</BODY>\r\n</HTML>\r\n\0";
 static const char ERROR_HTML_PAGE[] = "HTTP/1.1 404 Not Found\r\nContent-Type: \
-text/html\r\nContent-Length: 100\r\n\r\n<HTML>\r\n<BODY>\r\n404 not found !Sorry, the page you requested was not found. By ZBL ACM1601 U201614788\
+text/html\r\nContent-Length: 102\r\n\r\n<HTML>\r\n<BODY>\r\n404 not found !Sorry, the page you requested was not found. By ZBL ACM1601 U201614788\
 \r\n</BODY>\r\n</HTML>\r\n\0";
 //必须使用\\来表示转义字符 否则\无法被识别
 string fileBase = "G:\\ComputerNetworkLab\\lab1\\level1\\webserver\\lab1-computernetworking\\";
@@ -39,7 +40,7 @@ int write(SOCKET s,const char *usrbuf, int n){
 	int err = 0;
 	while (left>0)
 	{
-		written = send(s, usrbuf, left, 0);
+		written = send(s, bufp, left, 0);
 		if (written < 0){
             printf("write error ,Exit!\n");
             std::terminate();
@@ -62,7 +63,14 @@ void http_this(SOCKET this_socket,sockaddr addr)
     std::string text(inputstr);
     int match = std::regex_search(text,sm,regex);
     if(match==0){
-        printf("cannot match this http\n");
+        printf("cannot match this http , return 404!\n");
+		socketStringStream << ERROR_HTML_PAGE;
+		string tmp = socketStringStream.str();
+		const char* tmp_buf = tmp.c_str();
+		int size = strlen(tmp_buf);
+		write(this_socket, tmp_buf, size);
+		socketStringStream.str(std::string());
+		return;
     }
     // GET /index.html HTTP/1.1
     string operation1 = sm[1];// GET
@@ -75,7 +83,13 @@ void http_this(SOCKET this_socket,sockaddr addr)
     //std::cout << match;
     if (match2 == 0)
     {
-        printf("no file extension found, read again");
+        printf("no file extension found, return 404!\n");
+		socketStringStream << ERROR_HTML_PAGE;
+		string tmp = socketStringStream.str();
+		const char* tmp_buf = tmp.c_str();
+		int size = strlen(tmp_buf);
+		write(this_socket, tmp_buf, size);
+		socketStringStream.str(std::string());
          return;
     }
     else {
@@ -296,6 +310,8 @@ int main(int argc, char const *argv[])
             thread_pool[nNumConns]=std::thread(http_this,sConns[nNumConns],ConnAddrs[nNumConns]);
             thread_pool[nNumConns].detach();
             printf("5.accept and create new socket OK!\n");
+			//printf("sa_data = %d\n", ConnAddrs[nNumConns].sa_data);
+			//printf("sa_data = %s\n", ConnAddrs[nNumConns].sa_data);
             nNumConns ++;
         }
     }
