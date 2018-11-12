@@ -21,7 +21,7 @@
 #define BUFLEN 255
 
 using std::string;
-
+volatile int running = 0;
 static const char ERROR_HTML_PAGE[] = "HTTP/1.1 404 Not Found\r\nContent-Type: \
 text/html\r\nContent-Length: 102\r\n\r\n<HTML>\r\n<BODY>\r\n404 not found !Sorry, the page you requested was not found. By ZBL ACM1601 U201614788\
 \r\n</BODY>\r\n</HTML>\r\n\0";
@@ -204,6 +204,17 @@ void info_input(unsigned int & t)
 		std::cin.ignore(1, '\n');    //清除输入后留下的回车，或者直接清空缓存区也可
 	}
 }
+void exit_fun() {
+	while (running) {
+		char a = getchar();
+		if (a == 'q'||a=='Q') {
+			running = 0;
+			return;
+		}
+
+	}
+	return;
+}
 int main(int argc, char const *argv[])
 {
     //1
@@ -214,6 +225,7 @@ int main(int argc, char const *argv[])
     //3
     sockaddr_in srvAddr;
     //5
+	running = 1;
     int nAddrLen = sizeof(sockaddr);
     //获取当前程序运行的目录
 	char file_buffer[_MAX_PATH];
@@ -293,9 +305,13 @@ int main(int argc, char const *argv[])
     SOCKET sConns[MAXCONN];	//会话SOCKET数组
     sockaddr ConnAddrs[MAXCONN];//请求连接的客户端地址
     std::thread thread_pool[MAXCONN];//线程池
+	printf("input 'Q' or 'q' to exit\n");
+	std::thread tmp_thread = std::thread(exit_fun);
+	tmp_thread.detach();
     while( nNumConns < MAXCONN){
     //每当收到客户端连接请求，创建新的会话SOCKET，保存在/	//sConns数组中
     //客户端地址保存在ConnAddrs数组中
+		
     sConns[nNumConns] = accept(srvSock,&ConnAddrs[nNumConns], &nAddrLen);
         if(sConns[nNumConns] == INVALID_SOCKET)
         {
@@ -304,10 +320,14 @@ int main(int argc, char const *argv[])
         }
         else
         {
+			if (running == 0) {
+				return 0;
+			}
             //创建会话SOCKET成功，启动新的线程与客户端会话
             thread_pool[nNumConns]=std::thread(http_this,sConns[nNumConns],ConnAddrs[nNumConns]);
             thread_pool[nNumConns].detach();
             printf("5.accept and create new socket OK!\n");
+			printf("Thread : %d\n", thread_pool[nNumConns].get_id());
 			printf("该请求来自 %u.%u.%u.%u", (unsigned char)ConnAddrs[nNumConns].sa_data[2],(unsigned char) ConnAddrs[nNumConns].sa_data[3], (unsigned char)ConnAddrs[nNumConns].sa_data[4], (unsigned char)ConnAddrs[nNumConns].sa_data[5]);
 			printf(": %hu\n", (unsigned short)ConnAddrs[nNumConns].sa_data[0]);
             nNumConns ++;
