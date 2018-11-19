@@ -1,4 +1,5 @@
-﻿#include <stdio.h>
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include <stdio.h>
 #include <iostream>
 #include <istream>
 #include <ostream>
@@ -18,12 +19,15 @@
 #include <thread>
 #include <regex>
 #include <mutex>
+
 #define MAXCONN 10//for single thread
 #define BUFLEN 255
 int g_num = 0;  // protected by g_num_mutex
+int g_in = 0;
 std::mutex g_num_mutex;
+std::mutex g_in_mutex;
 using std::string;
-volatile int running = 0;
+volatile int running = 1;
 static const char ERROR_HTML_PAGE[] = "HTTP/1.1 404 Not Found\r\nContent-Type: \
 text/html\r\nContent-Length: 102\r\n\r\n<HTML>\r\n<BODY>\r\n404 not found !Sorry, the page you requested was not found. By ZBL ACM1601 U201614788\
 \r\n</BODY>\r\n</HTML>\r\n\0";
@@ -167,6 +171,10 @@ void http_this(SOCKET this_socket,sockaddr addr)
     // get file data
     tmp->sgetn(buffer, size);
     t.close();
+	g_num_mutex.lock();
+	std::cout << "operation:\n" << operation1 << std::endl << operation2 << std::endl;
+	printf("200 OK!\n");
+	g_num_mutex.unlock();
     socketStringStream <<"HTTP/1.1 200 OK" <<"\r\n"
         << "Server: Miao\r\n"<< "Content-Length: " << size <<"\r\n"
         <<"Connection: close\r\n"<<"Content-Type: " << contentType << "\r\n\r\n";
@@ -215,29 +223,21 @@ void info_input(unsigned int & t)
 	}
 }
 void exit_fun() {
-	while (running) {
-		char a = getchar();
-		if (a == 'q'||a=='Q') {
-			running = 0;
-			return;
-		}
-
-	}
-	return;
+	
 }
-int main(int argc, char const *argv[])
-{
-    //1
-    WSADATA wsaData;
-    int nRc;
-    //2
-    SOCKET srvSock;
-    //3
-    sockaddr_in srvAddr;
-    //5
+int sever_fun() {
+	g_in_mutex.lock();
+	//1
+	WSADATA wsaData;
+	int nRc;
+	//2
+	SOCKET srvSock;
+	//3
+	sockaddr_in srvAddr;
+	//5
 	running = 1;
-    int nAddrLen = sizeof(sockaddr);
-    //获取当前程序运行的目录
+	int nAddrLen = sizeof(sockaddr);
+	//获取当前程序运行的目录
 	char file_buffer[_MAX_PATH];
 	if (_getcwd(file_buffer, _MAX_PATH) == NULL) {
 		printf("无法获得程序当前运行目录\n");
@@ -247,108 +247,121 @@ int main(int argc, char const *argv[])
 		std::cout << "当前程序运行目录为" << file_buffer << "，已经设置为服务器默认工作目录\n";
 		fileBase = file_buffer;
 	}
-    // 1.initialize winsock using startup
-    nRc = WSAStartup(0x0101, & wsaData);		
-    if(nRc)
-    { 
-    //Winsock初始化错误
-    printf("Server Winsock initialize error! when startup return nRc==0\n");
-    return 1;
-    }
-    if(wsaData.wVersion != 0x0101)
-    {
-    //版本支持不够
-    //报告错误给用户，清除Winsock，返回
-	printf("Server winsock version error!\n ");
-    WSACleanup();
-    return 1; 
-    }
-    printf("1.Sever winsock init OK!\n");
-    
-    //2. socket TCP/UDP
-    srvSock = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
-    
-    if(srvSock == INVALID_SOCKET)
-    {
-    printf("Server create socket error!\n");
-    WSACleanup();
-    return 2;
-    }
-    printf("2.Server TCP socket create OK!\n");
+	// 1.initialize winsock using startup
+	nRc = WSAStartup(0x0101, &wsaData);
+	if (nRc)
+	{
+		//Winsock初始化错误
+		printf("Server Winsock initialize error! when startup return nRc==0\n");
+		return 1;
+	}
+	if (wsaData.wVersion != 0x0101)
+	{
+		//版本支持不够
+		//报告错误给用户，清除Winsock，返回
+		printf("Server winsock version error!\n ");
+		WSACleanup();
+		return 1;
+	}
+	printf("1.Sever winsock init OK!\n");
 
-    //3.bind socket to port 5050
+	//2. socket TCP/UDP
+	srvSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+	if (srvSock == INVALID_SOCKET)
+	{
+		printf("Server create socket error!\n");
+		WSACleanup();
+		return 2;
+	}
+	printf("2.Server TCP socket create OK!\n");
+
+	//3.bind socket to port 5050
 	printf("Please input file path for server .Press enter for default\n");
 	info_input(fileBase);
-    printf("Please input your Server IP addr(default: 127.0.0.1)\n");
+	printf("Please input your Server IP addr(default: 127.0.0.1)\n");
 	char ipaddr[16] = "127.0.0.1";
 	info_input(ipaddr);
 	printf("Please input your Server port(default:80)\n");
 	unsigned int ip_port = 80;
 	info_input(ip_port);
-    srvAddr.sin_family = AF_INET;
-    srvAddr.sin_port = htons(ip_port);
-    srvAddr.sin_addr.S_un.S_addr = inet_addr(ipaddr);
-    // srvAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-    nRc=bind(srvSock,(LPSOCKADDR)&srvAddr,sizeof(srvAddr));
-    if(nRc == SOCKET_ERROR)
-    {
-    printf("Server socket bind error!\n");
-    closesocket(srvSock);
-    WSACleanup();
-    return 3;
-    }
-    printf("3.Server socket bind OK!\n");
+	srvAddr.sin_family = AF_INET;
+	srvAddr.sin_port = htons(ip_port);
+	srvAddr.sin_addr.S_un.S_addr = inet_addr(ipaddr);
+	// srvAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+	g_in_mutex.unlock();
+	nRc = bind(srvSock, (LPSOCKADDR)&srvAddr, sizeof(srvAddr));
+	if (nRc == SOCKET_ERROR)
+	{
+		printf("Server socket bind error!\n");
+		closesocket(srvSock);
+		WSACleanup();
+		return 3;
+	}
+	printf("3.Server socket bind OK!\n");
 
-    //4.listen for connect
-    nRc = listen(srvSock,MAXCONN);
-    if(nRc == SOCKET_ERROR)
-    {
-    printf("Server socket listen error! Too much connect!\n");
-    closesocket(srvSock);
-    WSACleanup();
-    return 4;
-    }
-    printf("4.Sever socket linsten begin OK!\n");
+	//4.listen for connect
+	nRc = listen(srvSock, MAXCONN);
+	if (nRc == SOCKET_ERROR)
+	{
+		printf("Server socket listen error! Too much connect!\n");
+		closesocket(srvSock);
+		WSACleanup();
+		return 4;
+	}
+	printf("4.Sever socket linsten begin OK!\n");
 
-    //5.accept
-    int nNumConns = 0;	//当前请求连接数
-    SOCKET sConns[MAXCONN];	//会话SOCKET数组
-    sockaddr ConnAddrs[MAXCONN];//请求连接的客户端地址
-    std::thread thread_pool[MAXCONN];//线程池
+	//5.accept
+	int nNumConns = 0;	//当前请求连接数
+
 	printf("input 'Q' or 'q' to exit\n");
-	std::thread tmp_thread = std::thread(exit_fun);
-	tmp_thread.detach();
-    while( nNumConns < MAXCONN){
-    //每当收到客户端连接请求，创建新的会话SOCKET，保存在/	//sConns数组中
-    //客户端地址保存在ConnAddrs数组中
-		
-    sConns[nNumConns] = accept(srvSock,&ConnAddrs[nNumConns], &nAddrLen);
-        if(sConns[nNumConns] == INVALID_SOCKET)
-        {
-            printf("Cannot creat new socket accepted socket When accepted\n");
-            //创建会话SOCKET出错处理
-        }
-        else
-        {
-			if (running == 0) {
-				return 0;
-			}
-            //创建会话SOCKET成功，启动新的线程与客户端会话
-            thread_pool[nNumConns]=std::thread(http_this,sConns[nNumConns],ConnAddrs[nNumConns]);
-            thread_pool[nNumConns].detach();
-            g_num_mutex.lock();
-            // printf("5.accept and create new socket OK!\n");
-			printf("Thread : %d ----------\n", thread_pool[nNumConns].get_id());
-			printf("该请求来自 %u.%u.%u.%u", (unsigned char)ConnAddrs[nNumConns].sa_data[2],(unsigned char) ConnAddrs[nNumConns].sa_data[3], (unsigned char)ConnAddrs[nNumConns].sa_data[4], (unsigned char)ConnAddrs[nNumConns].sa_data[5]);
-			printf(": %hu\n", (unsigned short)ConnAddrs[nNumConns].sa_data[0]);
-            printf("---------------\n");
-            g_num_mutex.unlock();
-            nNumConns ++;
-        }
-    }
+	while (1) {
+		//每当收到客户端连接请求，创建新的会话SOCKET，保存在/	//sConns数组中
+		//客户端地址保存在ConnAddrs数组中
+		SOCKET sConns;	//会话SOCKET数组
+		sockaddr ConnAddrs;//请求连接的客户端地址
+		std::thread thread_pool;//线程
+		sConns = accept(srvSock, &ConnAddrs, &nAddrLen);
+		if (sConns == INVALID_SOCKET)
+		{
+			printf("Cannot creat new socket accepted socket When accepted\n");
+			//创建会话SOCKET出错处理
+		}
+		else
+		{
+
+			//创建会话SOCKET成功，启动新的线程与客户端会话
+			thread_pool = std::thread(http_this, sConns, ConnAddrs);
+			thread_pool.detach();
+			g_num_mutex.lock();
+			// printf("5.accept and create new socket OK!\n");
+			printf("Thread : %d --------------\n", thread_pool.get_id());
+			printf("该请求来自 %u.%u.%u.%u", (unsigned char)ConnAddrs.sa_data[2], (unsigned char)ConnAddrs.sa_data[3], (unsigned char)ConnAddrs.sa_data[4], (unsigned char)ConnAddrs.sa_data[5]);
+			printf(": %hu\n", (unsigned short)ConnAddrs.sa_data[0]);
+			printf("-----------------------------\n");
+			g_num_mutex.unlock();
+			nNumConns++;
+		}
+	}
 
 
-    return 0;
+	return 0;
+}
+int main(int argc, char const *argv[])
+{
+	std::thread main_thread = std::thread(sever_fun);
+	main_thread.detach();
+	while (running) {
+		g_in_mutex.lock();
+		char a = getchar();
+		g_in_mutex.unlock();
+		if (a == 'q' || a == 'Q') {
+			running = 0;
+			return 0;
+		}
+
+	}
+	return 0;
 }
 
 
